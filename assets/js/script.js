@@ -255,8 +255,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function fieldMessage(input) {
+        if (input.disabled || input.closest("[hidden]")) {
+            return "";
+        }
+
         var value = (input.value || "").trim();
         var matchName = input.getAttribute("data-match");
+        var kind = input.getAttribute("data-kind") || "";
 
         if (input.hasAttribute("required") && value === "") {
             return "This field is required.";
@@ -283,6 +288,38 @@ document.addEventListener("DOMContentLoaded", function () {
             var original = form ? form.querySelector('[name="' + matchName + '"]') : null;
             if (original && original.value !== input.value) {
                 return "Passwords do not match.";
+            }
+        }
+
+        if (kind === "gcash" && value !== "") {
+            var gcashDigits = value.replace(/\D/g, "");
+            if (gcashDigits.indexOf("63") === 0 && gcashDigits.length === 12) {
+                gcashDigits = "0" + gcashDigits.slice(2);
+            }
+            if (gcashDigits.length === 10 && gcashDigits.indexOf("9") === 0) {
+                gcashDigits = "0" + gcashDigits;
+            }
+            if (!/^09\d{9}$/.test(gcashDigits)) {
+                return "Enter an 11-digit GCash number (09XXXXXXXXX).";
+            }
+        }
+
+        if (kind === "card" && value !== "") {
+            var cardDigits = value.replace(/\D/g, "");
+            if (cardDigits.length < 13 || cardDigits.length > 19) {
+                return "Enter a valid card number.";
+            }
+        }
+
+        if (kind === "expiry" && value !== "") {
+            if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(value)) {
+                return "Use MM/YY.";
+            }
+        }
+
+        if (kind === "cvv" && value !== "") {
+            if (!/^\d{3,4}$/.test(value)) {
+                return "Enter a 3 or 4 digit CVV.";
             }
         }
 
@@ -353,14 +390,66 @@ document.addEventListener("DOMContentLoaded", function () {
     if (methodSelect) {
         var payForm = methodSelect.closest("form");
         var payButton = payForm ? payForm.querySelector("button[type='submit']") : null;
-        function syncPayButton() {
-            if (!payButton) {
-                return;
-            }
-            payButton.textContent = methodSelect.value === "Cash" ? "PAY AT GYM" : "COMPLETE PAYMENT";
+        var payGroups = payForm ? payForm.querySelectorAll(".pay-fields") : [];
+
+        function setPayGroup(group, on) {
+            group.hidden = !on;
+            group.querySelectorAll("input, select, textarea").forEach(function (field) {
+                field.disabled = !on;
+                if (on && field.getAttribute("data-needed") === "1") {
+                    field.required = true;
+                } else {
+                    field.required = false;
+                    clearError(field);
+                }
+            });
         }
-        methodSelect.addEventListener("change", syncPayButton);
-        syncPayButton();
+
+        function syncPayMethod() {
+            var method = methodSelect.value;
+            payGroups.forEach(function (group) {
+                setPayGroup(group, group.getAttribute("data-method") === method);
+            });
+            if (payButton) {
+                payButton.textContent = method === "Cash" ? "PAY AT GYM" : "COMPLETE PAYMENT";
+            }
+        }
+
+        function formatCardNumber(value) {
+            return value.replace(/\D/g, "").slice(0, 19).replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+        }
+
+        function formatExpiry(value) {
+            var digits = value.replace(/\D/g, "").slice(0, 4);
+            if (digits.length <= 2) {
+                return digits;
+            }
+            return digits.slice(0, 2) + "/" + digits.slice(2);
+        }
+
+        var cardNumber = document.getElementById("card_number");
+        if (cardNumber) {
+            cardNumber.addEventListener("input", function () {
+                cardNumber.value = formatCardNumber(cardNumber.value);
+            });
+        }
+
+        var cardExpiry = document.getElementById("card_expiry");
+        if (cardExpiry) {
+            cardExpiry.addEventListener("input", function () {
+                cardExpiry.value = formatExpiry(cardExpiry.value);
+            });
+        }
+
+        var gcashNumber = document.getElementById("gcash_number");
+        if (gcashNumber) {
+            gcashNumber.addEventListener("input", function () {
+                gcashNumber.value = gcashNumber.value.replace(/\D/g, "").slice(0, 12);
+            });
+        }
+
+        methodSelect.addEventListener("change", syncPayMethod);
+        syncPayMethod();
     }
 
     var adminStayPin = "forgeAdminStay";

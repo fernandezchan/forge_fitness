@@ -72,6 +72,7 @@ require "shared/header.php";
 
     <div class="hero-content">
         <div class="hero-text">
+            <p class="hero-kicker">Forge Fitness Gym</p>
             <h1>
                 TRAIN HARD.
                 <span>STAY STRONG.</span>
@@ -82,14 +83,17 @@ require "shared/header.php";
                 build a better version of yourself.
             </p>
             <div class="hero-buttons">
-                <a href="<?php echo e($logged_in ? (is_admin() ? url("admin/") : url("membership.php")) : url("auth/register.php")); ?>" class="btn btn-outline">JOIN NOW</a>
-                <a href="<?php echo e(url("gallery.php")); ?>" class="btn btn-outline">VIEW GALLERY</a>
+                <a href="<?php echo e($logged_in ? (is_admin() ? url("admin/") : url("membership.php")) : url("auth/register.php")); ?>" class="btn btn-primary"><span>JOIN NOW</span></a>
+                <a href="<?php echo e(url("gallery.php")); ?>" class="btn btn-secondary"><span>VIEW GALLERY</span></a>
             </div>
         </div>
     </div>
 
     <div class="services-box">
-        <h3>OUR SERVICES</h3>
+        <div class="services-head">
+            <h3>OUR SERVICES</h3>
+            <div></div>
+        </div>
         <div class="services-grid">
             <div class="service">
                 <div class="service-icon" aria-hidden="true">
@@ -101,7 +105,10 @@ require "shared/header.php";
                         <rect x="54" y="10" width="8" height="12" rx="1"/>
                     </svg>
                 </div>
-                <p>STRENGTH TRAINING</p>
+                <div class="service-copy">
+                    <p>STRENGTH TRAINING</p>
+                    <span>Free weights, racks, and machines.</span>
+                </div>
             </div>
             <div class="service">
                 <div class="service-icon" aria-hidden="true">
@@ -109,7 +116,10 @@ require "shared/header.php";
                         <path d="M12 21s-6.7-4.4-9.3-8.2C.7 10.2 1.1 6.8 3.6 5.2 5.6 3.9 8.2 4.4 12 8c3.8-3.6 6.4-4.1 8.4-2.8 2.5 1.6 2.9 5 1 7.6C18.7 16.6 12 21 12 21z"/>
                     </svg>
                 </div>
-                <p>CARDIO</p>
+                <div class="service-copy">
+                    <p>CARDIO</p>
+                    <span>Treadmills, bikes, and heart-rate work.</span>
+                </div>
             </div>
             <div class="service">
                 <div class="service-icon" aria-hidden="true">
@@ -118,7 +128,10 @@ require "shared/header.php";
                         <path d="M5.5 20c.8-3.6 3.4-5.5 6.5-5.5S17.7 16.4 18.5 20"/>
                     </svg>
                 </div>
-                <p>PERSONAL TRAINING</p>
+                <div class="service-copy">
+                    <p>PERSONAL TRAINING</p>
+                    <span>Coaches who push your form and pace.</span>
+                </div>
             </div>
             <div class="service">
                 <div class="service-icon" aria-hidden="true">
@@ -127,7 +140,10 @@ require "shared/header.php";
                         <path d="M14.8 10.2c1.9.4 3.4 2.6 3.4 5 0 2.8-2 5.3-4.4 5.3-1 0-1.6-.4-1.8-.4s-.8.4-1.8.4C7.8 20.5 5.8 18 5.8 15.2c0-2.5 1.6-4.7 3.6-5 1 .5 2 .8 2.6.8s1.6-.3 2.8-.8z"/>
                     </svg>
                 </div>
-                <p>NUTRITION PLAN</p>
+                <div class="service-copy">
+                    <p>NUTRITION PLAN</p>
+                    <span>Fuel that matches your training.</span>
+                </div>
             </div>
         </div>
     </div>
@@ -143,8 +159,10 @@ require "shared/header.php";
         </div>
 
         <div class="about-content">
-            <h2>ABOUT US</h2>
-            <div class="gold-line"></div>
+            <div class="about-heading">
+                <h2>ABOUT US</h2>
+                <div class="gold-line"></div>
+            </div>
             <h1>
                 WE'RE HERE TO HELP YOU BECOME THE
                 <span>STRONGEST VERSION</span>

@@ -17,8 +17,12 @@ $end_date = "";
 
 $current_membership = get_latest_membership($conn, $user_id);
 $current_plan = $current_membership ? $current_membership["plan"] : "";
-$account_email = "";
-$logged_email = strtolower(trim((string) ($_SESSION["user_email"] ?? "")));
+$payment_method = "GCash";
+$gcash_number = "";
+$card_name = "";
+$card_number = "";
+$card_expiry = "";
+$card_cvv = "";
 
 $already_active = membership_is_active($current_membership) && $current_plan === $plan;
 $pending_cash = get_pending_cash_membership($conn, $user_id);
@@ -39,19 +43,19 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST" && !$already_active) {
         $error = "Your session expired. Please try again.";
     } else {
         $payment_method = post_string("payment_method", 50);
-        $account_email = strtolower(post_string("account_email", 150));
-        if ($account_email === "") {
-            $account_email = strtolower(post_string("account_gmail", 150));
-        }
+        $gcash_number = post_string("gcash_number", 20);
+        $card_name = post_string("card_name", 80);
+        $card_number = post_string("card_number", 30);
+        $card_expiry = post_string("card_expiry", 7);
+        $card_cvv = post_string("card_cvv", 4);
+        $card_error = demo_card_error($card_name, $card_number, $card_expiry, $card_cvv);
 
         if (!in_array($payment_method, payment_methods(), true)) {
             $error = "Please choose a valid payment method.";
-        } elseif ($account_email === "") {
-            $error = "Please enter your account email.";
-        } elseif (!is_valid_email($account_email)) {
-            $error = "Please enter a valid email address.";
-        } elseif ($logged_email === "" || !hash_equals($logged_email, $account_email)) {
-            $error = "The email address must match your logged-in account.";
+        } elseif ($payment_method === "GCash" && !is_valid_gcash_number($gcash_number)) {
+            $error = "Please enter a valid GCash number (09XXXXXXXXX).";
+        } elseif ($payment_method === "Credit Card" && $card_error !== "") {
+            $error = $card_error;
         } elseif ($payment_method === "Cash") {
             if ($pending_this_plan) {
                 redirect("payment.php?plan=" . urlencode($plan) . "&cash=1");
@@ -145,27 +149,97 @@ require __DIR__ . "/shared/header.php";
                 <p>Membership Duration: <strong>30 DAYS</strong></p>
             </div>
 
-            <form method="POST" class="js-validate">
+            <form method="POST" class="js-validate" id="payment-form">
                 <?php echo csrf_field(); ?>
                 <label for="payment_method">Payment Method</label>
                 <select id="payment_method" name="payment_method" required>
                     <?php foreach (payment_methods() as $method): ?>
-                        <option value="<?php echo e($method); ?>">
+                        <option value="<?php echo e($method); ?>" <?php echo $payment_method === $method ? "selected" : ""; ?>>
                             <?php echo $method === "Cash" ? "Cash at Gym" : e($method); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
-                <label for="account_email">Account Email</label>
-                <input
-                    type="email"
-                    id="account_email"
-                    name="account_email"
-                    placeholder="Account Email"
-                    value="<?php echo e($account_email); ?>"
-                    maxlength="150"
-                    required
-                    data-match-email="<?php echo e($logged_email); ?>"
-                >
+
+                <div class="pay-fields" id="pay-gcash" data-method="GCash">
+                    <label for="gcash_number">GCash Number</label>
+                    <input
+                        type="tel"
+                        id="gcash_number"
+                        name="gcash_number"
+                        placeholder="09XXXXXXXXX"
+                        value="<?php echo e($gcash_number); ?>"
+                        maxlength="13"
+                        inputmode="numeric"
+                        autocomplete="tel"
+                        data-needed="1"
+                        data-kind="gcash"
+                    >
+                </div>
+
+                <div class="pay-fields" id="pay-card" data-method="Credit Card" hidden>
+                    <label for="card_name">Name on Card</label>
+                    <input
+                        type="text"
+                        id="card_name"
+                        name="card_name"
+                        placeholder="Name on Card"
+                        value="<?php echo e($card_name); ?>"
+                        maxlength="80"
+                        autocomplete="cc-name"
+                        data-needed="1"
+                        minlength="2"
+                    >
+                    <label for="card_number">Card Number</label>
+                    <input
+                        type="text"
+                        id="card_number"
+                        name="card_number"
+                        placeholder="ACCT-000015"
+                        value="<?php echo e($card_number); ?>"
+                        maxlength="23"
+                        inputmode="numeric"
+                        autocomplete="cc-number"
+                        data-needed="1"
+                        data-kind="card"
+                    >
+                    <div class="pay-row">
+                        <div>
+                            <label for="card_expiry">Expiry (MM/YY)</label>
+                            <input
+                                type="text"
+                                id="card_expiry"
+                                name="card_expiry"
+                                placeholder="MM/YY"
+                                value="<?php echo e($card_expiry); ?>"
+                                maxlength="5"
+                                inputmode="numeric"
+                                autocomplete="cc-exp"
+                                data-needed="1"
+                                data-kind="expiry"
+                            >
+                        </div>
+                        <div>
+                            <label for="card_cvv">CVV</label>
+                            <input
+                                type="password"
+                                id="card_cvv"
+                                name="card_cvv"
+                                placeholder="123"
+                                value="<?php echo e($card_cvv); ?>"
+                                maxlength="4"
+                                inputmode="numeric"
+                                autocomplete="cc-csc"
+                                data-needed="1"
+                                data-kind="cvv"
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pay-fields" id="pay-cash" data-method="Cash" hidden>
+                    <p class="pay-note">Pay in cash at the front desk. Staff will confirm it on the admin dashboard, then your 30-day plan starts.</p>
+                </div>
+
                 <button type="submit">COMPLETE PAYMENT</button>
             </form>
 
