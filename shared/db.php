@@ -71,7 +71,6 @@ if ($email_col && ($email_info = $email_col->fetch_assoc()) && stripos((string) 
 }
 
 $admin_email = "admin@gmail.com";
-$legacy_admin_email = "admin@forgefitness.com";
 
 $gmail_taken = $conn->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
 $gmail_taken->bind_param("s", $admin_email);

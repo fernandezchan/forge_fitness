@@ -21,8 +21,6 @@ $payment_method = "GCash";
 $gcash_number = "";
 $card_name = "";
 $card_number = "";
-$card_expiry = "";
-$card_cvv = "";
 
 $already_active = membership_is_active($current_membership) && $current_plan === $plan;
 $pending_cash = get_pending_cash_membership($conn, $user_id);
@@ -43,19 +41,20 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST" && !$already_active) {
         $error = "Your session expired. Please try again.";
     } else {
         $payment_method = post_string("payment_method", 50);
-        $gcash_number = post_string("gcash_number", 20);
+        $gcash_number = post_string("gcash_number", 40);
         $card_name = post_string("card_name", 80);
-        $card_number = post_string("card_number", 30);
-        $card_expiry = post_string("card_expiry", 7);
-        $card_cvv = post_string("card_cvv", 4);
-        $card_error = demo_card_error($card_name, $card_number, $card_expiry, $card_cvv);
+        $card_number = post_string("card_number", 40);
 
         if (!in_array($payment_method, payment_methods(), true)) {
             $error = "Please choose a valid payment method.";
-        } elseif ($payment_method === "GCash" && !is_valid_gcash_number($gcash_number)) {
-            $error = "Please enter a valid GCash number (09XXXXXXXXX).";
-        } elseif ($payment_method === "Credit Card" && $card_error !== "") {
-            $error = $card_error;
+        } elseif ($payment_method === "GCash" && $gcash_number === "") {
+            $error = "Please enter a GCash number.";
+        } elseif ($payment_method === "GCash" && !preg_match("/^[0-9 ]+$/", $gcash_number)) {
+            $error = "Not a valid Gcash number.";
+        } elseif ($payment_method === "Credit Card" && ($card_name === "" || $card_number === "")) {
+            $error = "Please enter the name on the card and a card number.";
+        } elseif ($payment_method === "Credit Card" && !preg_match("/^[0-9 ]+$/", $card_number)) {
+            $error = "Not a valid Card number.";
         } elseif ($payment_method === "Cash") {
             if ($pending_this_plan) {
                 redirect("payment.php?plan=" . urlencode($plan) . "&cash=1");
@@ -163,16 +162,15 @@ require __DIR__ . "/shared/header.php";
                 <div class="pay-fields" id="pay-gcash" data-method="GCash">
                     <label for="gcash_number">GCash Number</label>
                     <input
-                        type="tel"
+                        type="text"
                         id="gcash_number"
                         name="gcash_number"
-                        placeholder="09XXXXXXXXX"
+                        placeholder="GCash Number"
                         value="<?php echo e($gcash_number); ?>"
-                        maxlength="13"
+                        maxlength="40"
                         inputmode="numeric"
-                        autocomplete="tel"
                         data-needed="1"
-                        data-kind="gcash"
+                        data-kind="gcash-number"
                     >
                 </div>
 
@@ -185,55 +183,20 @@ require __DIR__ . "/shared/header.php";
                         placeholder="Name on Card"
                         value="<?php echo e($card_name); ?>"
                         maxlength="80"
-                        autocomplete="cc-name"
                         data-needed="1"
-                        minlength="2"
                     >
                     <label for="card_number">Card Number</label>
                     <input
                         type="text"
                         id="card_number"
                         name="card_number"
-                        placeholder="ACCT-000015"
+                        placeholder="Card Number"
                         value="<?php echo e($card_number); ?>"
-                        maxlength="23"
+                        maxlength="40"
                         inputmode="numeric"
-                        autocomplete="cc-number"
                         data-needed="1"
-                        data-kind="card"
+                        data-kind="card-number"
                     >
-                    <div class="pay-row">
-                        <div>
-                            <label for="card_expiry">Expiry (MM/YY)</label>
-                            <input
-                                type="text"
-                                id="card_expiry"
-                                name="card_expiry"
-                                placeholder="MM/YY"
-                                value="<?php echo e($card_expiry); ?>"
-                                maxlength="5"
-                                inputmode="numeric"
-                                autocomplete="cc-exp"
-                                data-needed="1"
-                                data-kind="expiry"
-                            >
-                        </div>
-                        <div>
-                            <label for="card_cvv">CVV</label>
-                            <input
-                                type="password"
-                                id="card_cvv"
-                                name="card_cvv"
-                                placeholder="123"
-                                value="<?php echo e($card_cvv); ?>"
-                                maxlength="4"
-                                inputmode="numeric"
-                                autocomplete="cc-csc"
-                                data-needed="1"
-                                data-kind="cvv"
-                            >
-                        </div>
-                    </div>
                 </div>
 
                 <div class="pay-fields" id="pay-cash" data-method="Cash" hidden>

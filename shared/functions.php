@@ -37,53 +37,6 @@ function is_valid_email(string $email): bool
     return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
 }
 
-function digits_only(string $value): string
-{
-    return preg_replace("/\D+/", "", $value) ?? "";
-}
-
-function is_valid_gcash_number(string $value): bool
-{
-    $digits = digits_only($value);
-    if (strlen($digits) === 12 && strpos($digits, "63") === 0) {
-        $digits = "0" . substr($digits, 2);
-    }
-    if (strlen($digits) === 10 && strpos($digits, "9") === 0) {
-        $digits = "0" . $digits;
-    }
-    return (bool) preg_match("/^09\d{9}$/", $digits);
-}
-
-function demo_card_error(string $name, string $number, string $expiry, string $cvv): string
-{
-    if (strlen($name) < 2) {
-        return "Please enter the name on the card.";
-    }
-
-    $digits = digits_only($number);
-    if (strlen($digits) < 13 || strlen($digits) > 19) {
-        return "Please enter a valid card number.";
-    }
-
-    if (!preg_match("/^(0[1-9]|1[0-2])\/(\d{2})$/", $expiry, $parts)) {
-        return "Enter the expiry date as MM/YY.";
-    }
-
-    $exp_month = (int) $parts[1];
-    $exp_year = 2000 + (int) $parts[2];
-    $exp_stamp = strtotime(sprintf("%04d-%02d-01", $exp_year, $exp_month));
-    $now_stamp = strtotime(date("Y-m-01"));
-    if ($exp_stamp === false || $now_stamp === false || $exp_stamp < $now_stamp) {
-        return "That card is expired.";
-    }
-
-    if (!preg_match("/^\d{3,4}$/", $cvv)) {
-        return "Please enter a 3 or 4 digit CVV.";
-    }
-
-    return "";
-}
-
 function csrf_token(): string
 {
     if (empty($_SESSION["csrf_token"]) || !is_string($_SESSION["csrf_token"])) {

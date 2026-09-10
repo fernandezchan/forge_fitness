@@ -21,7 +21,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST" && isset($_POST["delete_member
             flash_set("Could not delete that membership.", "error");
         }
     }
-    redirect("admin/?stay=memberships");
+    redirect("admin/?view=memberships");
 }
 
 if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST" && isset($_POST["delete_user"])) {
@@ -35,7 +35,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST" && isset($_POST["delete_user"]
             flash_set("Could not remove that account.", "error");
         }
     }
-    redirect("admin/?stay=accounts");
+    redirect("admin/?view=accounts");
 }
 
 if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST" && isset($_POST["grant_membership"])) {
@@ -76,7 +76,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST" && isset($_POST["grant_members
             }
         }
     }
-    redirect("admin/?stay=memberships");
+    redirect("admin/?view=memberships");
 }
 
 if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST" && isset($_POST["confirm_cash"])) {
@@ -104,13 +104,22 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST" && isset($_POST["confirm_cash"
             flash_set("Could not confirm that cash payment.", "error");
         }
     }
-    redirect("admin/?stay=memberships");
+    redirect("admin/?view=memberships");
 }
 
 [$notice, $notice_type] = flash_take();
+$view = get_string("view", 20);
 $stay = get_string("stay", 20);
-if (!in_array($stay, ["records", "grant", "accounts", "memberships"], true)) {
-    $stay = "";
+if (!in_array($view, ["dashboard", "accounts", "memberships", "grant"], true)) {
+    if ($stay === "accounts") {
+        $view = "accounts";
+    } elseif ($stay === "grant") {
+        $view = "grant";
+    } elseif (in_array($stay, ["memberships", "records"], true) || in_array($status_filter, ["active", "expired", "pending"], true)) {
+        $view = "memberships";
+    } else {
+        $view = "dashboard";
+    }
 }
 
 $total_users = count_table($conn, "SELECT COUNT(*) AS total FROM users WHERE role <> 'admin'");
@@ -287,13 +296,20 @@ if ($grant_result) {
     }
 }
 
-$admin_page = "dashboard";
-$page_title = "Admin Dashboard - Forge Fitness";
+$admin_page = $view;
+$page_titles = [
+    "dashboard" => "Admin Dashboard - Forge Fitness",
+    "accounts" => "Member Accounts - Forge Fitness",
+    "memberships" => "Membership Records - Forge Fitness",
+    "grant" => "Grant Membership - Forge Fitness",
+];
+$page_title = $page_titles[$view];
 $admin_unread = $pending_messages;
 require __DIR__ . "/../shared/admin_header.php";
 ?>
 
 <div class="admin-container">
+<?php if ($view === "dashboard"): ?>
     <div class="admin-hero">
         <div>
             <p class="admin-kicker">Forge Fitness Gym</p>
@@ -309,38 +325,31 @@ require __DIR__ . "/../shared/admin_header.php";
                 <a href="<?php echo e(url("admin/messages.php")); ?>" class="admin-quick-btn">
                     Open inbox<?php echo $pending_messages > 0 ? " (" . $pending_messages . ")" : ""; ?>
                 </a>
-                <a href="#grant" class="admin-quick-btn admin-quick-btn-ghost">Grant a plan</a>
+                <a href="<?php echo e(url("admin/?view=grant")); ?>" class="admin-quick-btn admin-quick-btn-ghost">Grant a plan</a>
             </div>
         </div>
     </div>
 
-    <nav class="admin-jump" aria-label="Dashboard sections">
-        <a href="#accounts">Member accounts</a>
-        <a href="#memberships">Membership records</a>
-        <a href="#grant">Walk-in grant</a>
-        <a href="<?php echo e(url("admin/messages.php")); ?>">Inbox<?php echo $pending_messages > 0 ? " · " . $pending_messages : ""; ?></a>
-    </nav>
-
     <div class="admin-stats">
-        <a class="admin-stat-card" href="#accounts">
+        <a class="admin-stat-card" href="<?php echo e(url("admin/?view=accounts")); ?>">
             <h3>REGISTERED MEMBERS</h3>
             <h2><?php echo $total_users; ?></h2>
             <p><?php echo $new_this_month; ?> new this month</p>
             <span class="admin-stat-hint">View accounts</span>
         </a>
-        <a class="admin-stat-card" href="<?php echo e(url("admin/?status=active&stay=memberships")); ?>">
+        <a class="admin-stat-card" href="<?php echo e(url("admin/?view=memberships&status=active")); ?>">
             <h3>ACTIVE PLANS</h3>
             <h2><?php echo $active_memberships; ?></h2>
             <p><?php echo $expired_memberships; ?> expired</p>
             <span class="admin-stat-hint">Show active</span>
         </a>
-        <a class="admin-stat-card" href="#memberships">
+        <a class="admin-stat-card" href="<?php echo e(url("admin/?view=memberships")); ?>">
             <h3>REVENUE</h3>
             <h2>₱<?php echo number_format($total_revenue, 0); ?></h2>
             <p><?php echo $total_memberships; ?> membership records</p>
             <span class="admin-stat-hint">View records</span>
         </a>
-        <a class="admin-stat-card<?php echo ($pending_messages + $expiring_soon + $pending_cash_count) > 0 ? " is-alert" : ""; ?>" href="<?php echo $pending_cash_count > 0 ? e(url("admin/?status=pending&stay=memberships")) : e(url("admin/messages.php")); ?>">
+        <a class="admin-stat-card<?php echo ($pending_messages + $expiring_soon + $pending_cash_count) > 0 ? " is-alert" : ""; ?>" href="<?php echo $pending_cash_count > 0 ? e(url("admin/?view=memberships&status=pending")) : e(url("admin/messages.php")); ?>">
             <h3>NEEDS ATTENTION</h3>
             <h2><?php echo $pending_messages + $expiring_soon + $pending_cash_count; ?></h2>
             <p><?php echo $pending_messages; ?> unread · <?php echo $pending_cash_count; ?> cash · <?php echo $expiring_soon; ?> expiring in 7 days</p>
@@ -399,7 +408,7 @@ require __DIR__ . "/../shared/admin_header.php";
                                 <strong><?php echo e($item["name"]); ?></strong>
                                 <span><?php echo e($item["plan"]); ?> · ₱<?php echo number_format((float) $item["price"], 0); ?></span>
                             </div>
-                            <a href="<?php echo e(url("admin/?status=pending&stay=memberships")); ?>" class="admin-mini-btn">Review</a>
+                            <a href="<?php echo e(url("admin/?view=memberships&status=pending")); ?>" class="admin-mini-btn">Review</a>
                         </li>
                     <?php endforeach; ?>
                 </ul>
@@ -421,10 +430,46 @@ require __DIR__ . "/../shared/admin_header.php";
             <?php endif; ?>
         </section>
     </div>
-
+<?php elseif ($view === "accounts"): ?>
+    <div class="admin-hero">
+        <div>
+            <p class="admin-kicker">Forge Fitness Gym</p>
+            <h1>MEMBER ACCOUNTS</h1>
+            <p class="admin-welcome">Registered members only. Remove an account from here.</p>
+        </div>
+    </div>
+    <?php if ($notice): ?>
+        <div class="<?php echo $notice_type === "error" ? "contact-error" : "contact-success"; ?>">
+            <?php echo e($notice); ?>
+        </div>
+    <?php endif; ?>
+    <form class="admin-toolbar" method="GET" action="<?php echo e(url("admin/")); ?>" role="search">
+        <input type="hidden" name="view" value="accounts">
+        <p class="admin-toolbar-kicker">Find a member</p>
+        <div class="admin-toolbar-row">
+            <input type="search" name="q" value="<?php echo e($search); ?>" placeholder="Search name or email" maxlength="80" aria-label="Search name or email">
+            <button type="submit">FILTER</button>
+            <?php if ($search !== ""): ?>
+                <a href="<?php echo e(url("admin/?view=accounts")); ?>" class="admin-clear">Clear</a>
+            <?php endif; ?>
+        </div>
+    </form>
+<?php elseif ($view === "memberships"): ?>
+    <div class="admin-hero">
+        <div>
+            <p class="admin-kicker">Forge Fitness Gym</p>
+            <h1>MEMBERSHIP RECORDS</h1>
+            <p class="admin-welcome">Payments, dates, and plan history.</p>
+        </div>
+    </div>
+    <?php if ($notice): ?>
+        <div class="<?php echo $notice_type === "error" ? "contact-error" : "contact-success"; ?>">
+            <?php echo e($notice); ?>
+        </div>
+    <?php endif; ?>
     <form id="records" class="admin-toolbar" method="GET" action="<?php echo e(url("admin/")); ?>" role="search">
-        <input type="hidden" name="stay" value="records">
-        <p class="admin-toolbar-kicker">Search accounts and membership records</p>
+        <input type="hidden" name="view" value="memberships">
+        <p class="admin-toolbar-kicker">Search membership records</p>
         <div class="admin-toolbar-row">
             <input type="search" name="q" value="<?php echo e($search); ?>" placeholder="Search name or email" maxlength="80" aria-label="Search name or email">
             <select name="status" aria-label="Filter membership status">
@@ -435,20 +480,17 @@ require __DIR__ . "/../shared/admin_header.php";
             </select>
             <button type="submit">FILTER</button>
             <?php if ($search !== "" || $status_filter !== "all"): ?>
-                <a href="<?php echo e(url("admin/?stay=records")); ?>" class="admin-clear">Clear</a>
+                <a href="<?php echo e(url("admin/?view=memberships")); ?>" class="admin-clear">Clear</a>
             <?php endif; ?>
         </div>
     </form>
+<?php endif; ?>
 
+<?php if ($view === "accounts"): ?>
     <div id="accounts" class="admin-table-box">
         <div class="admin-table-header">
             <h2>MEMBER ACCOUNTS</h2>
             <p><?php echo (int) $accounts->num_rows; ?> registered members</p>
-            <?php if ($notice && $stay === "accounts"): ?>
-                <div class="<?php echo $notice_type === "error" ? "contact-error" : "contact-success"; ?>">
-                    <?php echo e($notice); ?>
-                </div>
-            <?php endif; ?>
         </div>
         <table>
             <thead>
@@ -529,7 +571,7 @@ require __DIR__ . "/../shared/admin_header.php";
             </tbody>
         </table>
     </div>
-
+<?php elseif ($view === "memberships"): ?>
     <div id="memberships" class="admin-table-box">
         <div class="admin-table-header">
             <h2>MEMBERSHIP RECORDS</h2>
@@ -539,11 +581,6 @@ require __DIR__ . "/../shared/admin_header.php";
                     <?php echo (int) $pending_cash_count; ?> cash payment<?php echo $pending_cash_count === 1 ? "" : "s"; ?> waiting.
                 <?php endif; ?>
             </p>
-            <?php if ($notice && $stay === "memberships"): ?>
-                <div class="<?php echo $notice_type === "error" ? "contact-error" : "contact-success"; ?>">
-                    <?php echo e($notice); ?>
-                </div>
-            <?php endif; ?>
         </div>
         <table>
             <thead>
@@ -643,7 +680,19 @@ require __DIR__ . "/../shared/admin_header.php";
             </tbody>
         </table>
     </div>
-
+<?php elseif ($view === "grant"): ?>
+    <div class="admin-hero">
+        <div>
+            <p class="admin-kicker">Forge Fitness Gym</p>
+            <h1>WALK-IN GRANT</h1>
+            <p class="admin-welcome">Grant a plan to a registered member. Cash stays pending until you confirm it in Membership Records.</p>
+        </div>
+    </div>
+    <?php if ($notice): ?>
+        <div class="<?php echo $notice_type === "error" ? "contact-error" : "contact-success"; ?>">
+            <?php echo e($notice); ?>
+        </div>
+    <?php endif; ?>
     <section id="grant" class="admin-panel admin-grant-panel">
         <div class="admin-panel-head">
             <h2>GRANT MEMBERSHIP</h2>
@@ -698,23 +747,8 @@ require __DIR__ . "/../shared/admin_header.php";
             </form>
         <?php endif; ?>
     </section>
-</div>
-
-<?php if ($stay !== ""): ?>
-<script>
-(function () {
-    var nav = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
-    if (nav && nav.type === "reload") {
-        window.scrollTo(0, 0);
-        return;
-    }
-    var target = document.getElementById(<?php echo json_encode($stay); ?>);
-    if (target) {
-        target.scrollIntoView({ behavior: "auto", block: "start" });
-    }
-})();
-</script>
 <?php endif; ?>
+</div>
 
 <?php
 $accounts_stmt->close();

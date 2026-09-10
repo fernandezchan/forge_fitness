@@ -24,7 +24,7 @@ $admin_unread = $admin_unread ?? (
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo e($page_title); ?></title>
     <link rel="icon" href="<?php echo e(url("assets/images/logo.png")); ?>">
-    <link rel="stylesheet" href="<?php echo e(url("style.css?v=19")); ?>">
+    <link rel="stylesheet" href="<?php echo e(url("style.css?v=29")); ?>">
     <script>
         if ("scrollRestoration" in history) {
             history.scrollRestoration = "manual";
@@ -40,16 +40,7 @@ $admin_unread = $admin_unread ?? (
             <h2>FORGE FITNESS <span>ADMIN</span></h2>
         </a>
         <nav>
-            <div class="admin-nav-links">
-                <a href="<?php echo e(url("admin/")); ?>" class="<?php echo $admin_page === "dashboard" ? "active" : ""; ?>">DASHBOARD</a>
-                <a href="<?php echo e(url("admin/messages.php")); ?>" class="<?php echo $admin_page === "messages" ? "active" : ""; ?>">
-                    MESSAGES
-                    <?php if ((int) $admin_unread > 0): ?>
-                        <span class="admin-nav-badge"><?php echo (int) $admin_unread; ?></span>
-                    <?php endif; ?>
-                </a>
-                <a href="<?php echo e(url("index.php")); ?>">VIEW SITE</a>
-            </div>
+            <a href="<?php echo e(url("index.php")); ?>">VIEW SITE</a>
             <span class="admin-who">
                 <strong><?php echo e($admin_display_name); ?></strong>
                 <small><?php echo e($admin_display_email); ?></small>
@@ -58,3 +49,19 @@ $admin_unread = $admin_unread ?? (
         </nav>
     </div>
 </header>
+
+<div class="admin-shell">
+    <aside class="admin-sidebar" aria-label="Admin pages">
+        <p class="admin-sidebar-kicker">Menu</p>
+        <a href="<?php echo e(url("admin/")); ?>" class="<?php echo $admin_page === "dashboard" ? "active" : ""; ?>">Dashboard</a>
+        <a href="<?php echo e(url("admin/?view=accounts")); ?>" class="<?php echo $admin_page === "accounts" ? "active" : ""; ?>">Members</a>
+        <a href="<?php echo e(url("admin/?view=memberships")); ?>" class="<?php echo $admin_page === "memberships" ? "active" : ""; ?>">Membership records</a>
+        <a href="<?php echo e(url("admin/?view=grant")); ?>" class="<?php echo $admin_page === "grant" ? "active" : ""; ?>">Walk-in grant</a>
+        <a href="<?php echo e(url("admin/messages.php")); ?>" class="<?php echo $admin_page === "messages" ? "active" : ""; ?>">
+            Inbox
+            <?php if ((int) $admin_unread > 0): ?>
+                <span class="admin-nav-badge"><?php echo (int) $admin_unread; ?></span>
+            <?php endif; ?>
+        </a>
+    </aside>
+    <div class="admin-main">

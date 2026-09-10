@@ -12,7 +12,7 @@ $active_page = $active_page ?? "home";
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo e($page_title ?? "Forge Fitness Gym"); ?></title>
     <link rel="icon" href="<?php echo e(url("assets/images/logo.png")); ?>">
-    <link rel="stylesheet" href="<?php echo e(url("style.css?v=24")); ?>">
+    <link rel="stylesheet" href="<?php echo e(url("style.css?v=31")); ?>">
     <script>
         if ("scrollRestoration" in history) {
             history.scrollRestoration = "manual";

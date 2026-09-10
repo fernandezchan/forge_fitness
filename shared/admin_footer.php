@@ -1,3 +1,5 @@
+    </div>
+</div>
 <div class="admin-modal" id="admin-confirm-modal" hidden>
     <div class="admin-modal-backdrop" data-modal-close="1"></div>
     <div class="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="admin-confirm-title">
@@ -9,6 +11,6 @@
         </div>
     </div>
 </div>
-<script src="<?php echo e(url("assets/js/script.js?v=19")); ?>"></script>
+<script src="<?php echo e(url("assets/js/script.js?v=29")); ?>"></script>
 </body>
 </html>

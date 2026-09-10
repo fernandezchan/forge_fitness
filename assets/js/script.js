@@ -261,7 +261,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var value = (input.value || "").trim();
         var matchName = input.getAttribute("data-match");
-        var kind = input.getAttribute("data-kind") || "";
 
         if (input.hasAttribute("required") && value === "") {
             return "This field is required.";
@@ -291,36 +290,12 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        if (kind === "gcash" && value !== "") {
-            var gcashDigits = value.replace(/\D/g, "");
-            if (gcashDigits.indexOf("63") === 0 && gcashDigits.length === 12) {
-                gcashDigits = "0" + gcashDigits.slice(2);
-            }
-            if (gcashDigits.length === 10 && gcashDigits.indexOf("9") === 0) {
-                gcashDigits = "0" + gcashDigits;
-            }
-            if (!/^09\d{9}$/.test(gcashDigits)) {
-                return "Enter an 11-digit GCash number (09XXXXXXXXX).";
-            }
+        if (input.getAttribute("data-kind") === "card-number" && value !== "" && !/^[0-9 ]+$/.test(value)) {
+            return "Not a valid Card number.";
         }
 
-        if (kind === "card" && value !== "") {
-            var cardDigits = value.replace(/\D/g, "");
-            if (cardDigits.length < 13 || cardDigits.length > 19) {
-                return "Enter a valid card number.";
-            }
-        }
-
-        if (kind === "expiry" && value !== "") {
-            if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(value)) {
-                return "Use MM/YY.";
-            }
-        }
-
-        if (kind === "cvv" && value !== "") {
-            if (!/^\d{3,4}$/.test(value)) {
-                return "Enter a 3 or 4 digit CVV.";
-            }
+        if (input.getAttribute("data-kind") === "gcash-number" && value !== "" && !/^[0-9 ]+$/.test(value)) {
+            return "Not a valid Gcash number.";
         }
 
         return "";
@@ -415,39 +390,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
 
-        function formatCardNumber(value) {
-            return value.replace(/\D/g, "").slice(0, 19).replace(/(\d{4})(?=\d)/g, "$1 ").trim();
-        }
-
-        function formatExpiry(value) {
-            var digits = value.replace(/\D/g, "").slice(0, 4);
-            if (digits.length <= 2) {
-                return digits;
-            }
-            return digits.slice(0, 2) + "/" + digits.slice(2);
-        }
-
-        var cardNumber = document.getElementById("card_number");
-        if (cardNumber) {
-            cardNumber.addEventListener("input", function () {
-                cardNumber.value = formatCardNumber(cardNumber.value);
-            });
-        }
-
-        var cardExpiry = document.getElementById("card_expiry");
-        if (cardExpiry) {
-            cardExpiry.addEventListener("input", function () {
-                cardExpiry.value = formatExpiry(cardExpiry.value);
-            });
-        }
-
-        var gcashNumber = document.getElementById("gcash_number");
-        if (gcashNumber) {
-            gcashNumber.addEventListener("input", function () {
-                gcashNumber.value = gcashNumber.value.replace(/\D/g, "").slice(0, 12);
-            });
-        }
-
         methodSelect.addEventListener("change", syncPayMethod);
         syncPayMethod();
     }
@@ -527,6 +469,21 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
+    var grantForm = document.querySelector(".admin-grant-form");
+    if (grantForm) {
+        grantForm.addEventListener("submit", function (event) {
+            var select = document.getElementById("grant_user_id");
+            var methodSelect = document.getElementById("grant_payment_method");
+            var option = select && select.options[select.selectedIndex];
+            var method = methodSelect ? methodSelect.value : "Cash";
+            if (method !== "Cash" && option && option.getAttribute("data-active") === "1") {
+                if (!window.confirm("This member already has an active plan. Granting a new one will replace it with a new 30-day plan. Continue?")) {
+                    event.preventDefault();
+                }
+            }
+        });
+    }
+
     if (confirmModal) {
         confirmModal.querySelectorAll("[data-modal-close]").forEach(function (el) {
             el.addEventListener("click", closeAdminConfirm);
@@ -575,23 +532,6 @@ document.addEventListener("DOMContentLoaded", function () {
         if (clearLink) {
             clearLink.addEventListener("click", function () {
                 pinAdminStay("records");
-            });
-        }
-
-        var grantForm = document.querySelector(".admin-grant-form");
-        if (grantForm) {
-            grantForm.addEventListener("submit", function (event) {
-                var select = document.getElementById("grant_user_id");
-                var methodSelect = document.getElementById("grant_payment_method");
-                var option = select && select.options[select.selectedIndex];
-                var method = methodSelect ? methodSelect.value : "Cash";
-                if (method !== "Cash" && option && option.getAttribute("data-active") === "1") {
-                    if (!window.confirm("This member already has an active plan. Granting a new one will replace it with a new 30-day plan. Continue?")) {
-                        event.preventDefault();
-                        return;
-                    }
-                }
-                pinAdminStay("memberships");
             });
         }
 

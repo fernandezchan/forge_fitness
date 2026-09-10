@@ -57,6 +57,6 @@
     </div>
 </footer>
 
-<script src="<?php echo e(url("assets/js/script.js?v=24")); ?>"></script>
+<script src="<?php echo e(url("assets/js/script.js?v=28")); ?>"></script>
 </body>
 </html>
