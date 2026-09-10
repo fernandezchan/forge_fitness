@@ -363,18 +363,107 @@ document.addEventListener("DOMContentLoaded", function () {
         syncPayButton();
     }
 
-    var adminToolbar = document.querySelector(".admin-toolbar");
-    if (adminToolbar) {
-        var adminStayPin = "forgeAdminStay";
+    var adminStayPin = "forgeAdminStay";
 
-        function pinAdminStay(section) {
-            try {
-                sessionStorage.setItem(adminStayPin, section);
-            } catch (error) {
-                return;
+    function pinAdminStay(section) {
+        if (!section) {
+            return;
+        }
+        try {
+            sessionStorage.setItem(adminStayPin, section);
+        } catch (error) {
+            return;
+        }
+    }
+
+    var confirmModal = document.getElementById("admin-confirm-modal");
+    var confirmTitle = document.getElementById("admin-confirm-title");
+    var confirmText = document.getElementById("admin-confirm-text");
+    var confirmOk = document.getElementById("admin-confirm-ok");
+    var pendingConfirmForm = null;
+
+    function closeAdminConfirm() {
+        pendingConfirmForm = null;
+        if (confirmModal) {
+            confirmModal.hidden = true;
+        }
+        document.body.classList.remove("admin-modal-open");
+        if (confirmOk) {
+            confirmOk.classList.remove("is-danger");
+        }
+    }
+
+    function confirmFormMessage(form) {
+        var message = (form.getAttribute("data-message") || "").trim();
+        if (message) {
+            return message;
+        }
+        var member = (form.getAttribute("data-member") || "").trim();
+        var plan = (form.getAttribute("data-plan") || "").trim();
+        if (member && plan) {
+            return "Confirm cash payment for " + member + "'s " + plan + " plan? This starts a 30-day membership.";
+        }
+        return "Are you sure?";
+    }
+
+    function openAdminConfirm(form) {
+        pendingConfirmForm = form;
+        if (confirmTitle) {
+            confirmTitle.textContent = form.getAttribute("data-title") || "CONFIRM";
+        }
+        if (confirmText) {
+            confirmText.textContent = confirmFormMessage(form);
+        }
+        if (confirmOk) {
+            confirmOk.textContent = form.getAttribute("data-ok") || "CONFIRM";
+            if (form.getAttribute("data-danger") === "1") {
+                confirmOk.classList.add("is-danger");
+            } else {
+                confirmOk.classList.remove("is-danger");
             }
         }
+        if (confirmModal) {
+            confirmModal.hidden = false;
+            document.body.classList.add("admin-modal-open");
+        }
+        if (confirmOk) {
+            confirmOk.focus();
+        }
+    }
 
+    document.querySelectorAll("form.js-admin-confirm").forEach(function (form) {
+        form.addEventListener("submit", function (event) {
+            event.preventDefault();
+            openAdminConfirm(form);
+        });
+    });
+
+    if (confirmModal) {
+        confirmModal.querySelectorAll("[data-modal-close]").forEach(function (el) {
+            el.addEventListener("click", closeAdminConfirm);
+        });
+    }
+    if (confirmOk) {
+        confirmOk.addEventListener("click", function () {
+            if (!pendingConfirmForm) {
+                closeAdminConfirm();
+                return;
+            }
+            var form = pendingConfirmForm;
+            var stay = form.getAttribute("data-stay") || "";
+            closeAdminConfirm();
+            pinAdminStay(stay);
+            form.submit();
+        });
+    }
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && confirmModal && !confirmModal.hidden) {
+            closeAdminConfirm();
+        }
+    });
+
+    var adminToolbar = document.querySelector(".admin-toolbar");
+    if (adminToolbar) {
         function jumpToAdminStay(section) {
             var target = document.getElementById(section);
             if (target) {
@@ -416,92 +505,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 pinAdminStay("memberships");
             });
         }
-
-        document.querySelectorAll("form.js-admin-confirm").forEach(function (form) {
-            form.addEventListener("submit", function (event) {
-                event.preventDefault();
-                openAdminConfirm(form);
-            });
-        });
-
-        var confirmModal = document.getElementById("admin-confirm-modal");
-        var confirmTitle = document.getElementById("admin-confirm-title");
-        var confirmText = document.getElementById("admin-confirm-text");
-        var confirmOk = document.getElementById("admin-confirm-ok");
-        var pendingConfirmForm = null;
-
-        function closeAdminConfirm() {
-            pendingConfirmForm = null;
-            if (confirmModal) {
-                confirmModal.hidden = true;
-            }
-            document.body.classList.remove("admin-modal-open");
-            if (confirmOk) {
-                confirmOk.classList.remove("is-danger");
-            }
-        }
-
-        function confirmFormMessage(form) {
-            var message = (form.getAttribute("data-message") || "").trim();
-            if (message) {
-                return message;
-            }
-            var member = (form.getAttribute("data-member") || "").trim();
-            var plan = (form.getAttribute("data-plan") || "").trim();
-            if (member && plan) {
-                return "Confirm cash payment for " + member + "'s " + plan + " plan? This starts a 30-day membership.";
-            }
-            return "Are you sure?";
-        }
-
-        function openAdminConfirm(form) {
-            pendingConfirmForm = form;
-            if (confirmTitle) {
-                confirmTitle.textContent = form.getAttribute("data-title") || "CONFIRM";
-            }
-            if (confirmText) {
-                confirmText.textContent = confirmFormMessage(form);
-            }
-            if (confirmOk) {
-                confirmOk.textContent = form.getAttribute("data-ok") || "CONFIRM";
-                if (form.getAttribute("data-danger") === "1") {
-                    confirmOk.classList.add("is-danger");
-                } else {
-                    confirmOk.classList.remove("is-danger");
-                }
-            }
-            if (confirmModal) {
-                confirmModal.hidden = false;
-                document.body.classList.add("admin-modal-open");
-            }
-            if (confirmOk) {
-                confirmOk.focus();
-            }
-        }
-
-        if (confirmModal) {
-            confirmModal.querySelectorAll("[data-modal-close]").forEach(function (el) {
-                el.addEventListener("click", closeAdminConfirm);
-            });
-        }
-        if (confirmOk) {
-            confirmOk.addEventListener("click", function () {
-                if (!pendingConfirmForm) {
-                    closeAdminConfirm();
-                    return;
-                }
-                var form = pendingConfirmForm;
-                var stay = form.getAttribute("data-stay") || "records";
-                closeAdminConfirm();
-                pinAdminStay(stay);
-                form.submit();
-            });
-        }
-        document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape" && confirmModal && !confirmModal.hidden) {
-                closeAdminConfirm();
-            }
-        });
 
         document.querySelectorAll("form.js-pin-stay").forEach(function (form) {
             form.addEventListener("submit", function (event) {

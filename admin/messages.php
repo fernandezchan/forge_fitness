@@ -83,8 +83,16 @@ require __DIR__ . "/../shared/admin_header.php";
 ?>
 
 <div class="admin-container">
-    <h1>CUSTOMER MESSAGES</h1>
-    <p class="admin-welcome">Chat with members. They can reply from their Inbox.</p>
+    <div class="admin-hero">
+        <div>
+            <p class="admin-kicker">Forge Fitness Gym</p>
+            <h1>CUSTOMER MESSAGES</h1>
+            <p class="admin-welcome">Chat with members. They can reply from their Inbox after you send a reply.</p>
+        </div>
+        <div class="admin-hero-meta">
+            <a href="<?php echo e(url("admin/")); ?>" class="admin-quick-btn admin-quick-btn-ghost">Back to dashboard</a>
+        </div>
+    </div>
 
     <?php if ($notice): ?>
         <div class="<?php echo $notice_type === "error" ? "contact-error" : "contact-success"; ?>">
@@ -139,9 +147,11 @@ require __DIR__ . "/../shared/admin_header.php";
                         <?php endforeach; ?>
                     </div>
 
+                    <div class="admin-message-actions">
                     <form method="POST" class="admin-reply-form js-validate">
                         <?php echo csrf_field(); ?>
                         <input type="hidden" name="message_id" value="<?php echo (int) $message["id"]; ?>">
+                        <input type="hidden" name="reply_message" value="1">
                         <label for="reply-<?php echo (int) $message["id"]; ?>">Write a reply</label>
                         <textarea
                             id="reply-<?php echo (int) $message["id"]; ?>"
@@ -155,18 +165,28 @@ require __DIR__ . "/../shared/admin_header.php";
                         <button type="submit" name="reply_message" value="1">SEND REPLY</button>
                     </form>
 
-                    <form method="POST" class="inline-form" onsubmit="return confirm('Delete this whole conversation?');">
+                    <form
+                        method="POST"
+                        class="inline-form js-admin-confirm"
+                        data-title="DELETE THREAD"
+                        data-message="Delete the whole conversation with <?php echo e($message["name"]); ?>?"
+                        data-ok="DELETE"
+                        data-danger="1"
+                    >
                         <?php echo csrf_field(); ?>
                         <input type="hidden" name="message_id" value="<?php echo (int) $message["id"]; ?>">
-                        <button type="submit" name="delete_message" value="1" class="danger-btn">DELETE THREAD</button>
+                        <input type="hidden" name="delete_message" value="1">
+                        <button type="submit" class="danger-btn">DELETE THREAD</button>
                     </form>
+                    </div>
                 </article>
             <?php endwhile; ?>
         </div>
     <?php else: ?>
-        <div class="empty-data">
-            <strong>No messages yet.</strong>
-            Customer inquiries from the contact form will appear here.
+        <div class="admin-empty-card">
+            <strong>No messages yet</strong>
+            <p>Customer inquiries from the contact form will appear here. You can also open the public site from the top bar.</p>
+            <a href="<?php echo e(url("admin/")); ?>" class="admin-quick-btn">Back to dashboard</a>
         </div>
     <?php endif; ?>
 </div>

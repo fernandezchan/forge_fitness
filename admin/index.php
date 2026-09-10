@@ -289,45 +289,63 @@ if ($grant_result) {
 
 $admin_page = "dashboard";
 $page_title = "Admin Dashboard - Forge Fitness";
+$admin_unread = $pending_messages;
 require __DIR__ . "/../shared/admin_header.php";
 ?>
 
 <div class="admin-container">
     <div class="admin-hero">
         <div>
+            <p class="admin-kicker">Forge Fitness Gym</p>
             <h1>ADMIN DASHBOARD</h1>
             <p class="admin-welcome">
                 Welcome back, <?php echo e($_SESSION["admin_username"] ?? $_SESSION["user_name"] ?? "Admin"); ?>.
-                Here’s what’s happening at Forge Fitness today.
+                Here’s what’s happening at the gym today.
             </p>
         </div>
         <div class="admin-hero-meta">
-            <span><?php echo date("l, F j, Y"); ?></span>
-            <a href="<?php echo e(url("admin/messages.php")); ?>" class="admin-quick-btn">Open inbox<?php echo $pending_messages > 0 ? " (" . $pending_messages . ")" : ""; ?></a>
+            <span class="admin-date-chip"><?php echo date("l, F j, Y"); ?></span>
+            <div class="admin-hero-actions">
+                <a href="<?php echo e(url("admin/messages.php")); ?>" class="admin-quick-btn">
+                    Open inbox<?php echo $pending_messages > 0 ? " (" . $pending_messages . ")" : ""; ?>
+                </a>
+                <a href="#grant" class="admin-quick-btn admin-quick-btn-ghost">Grant a plan</a>
+            </div>
         </div>
     </div>
 
+    <nav class="admin-jump" aria-label="Dashboard sections">
+        <a href="#accounts">Member accounts</a>
+        <a href="#memberships">Membership records</a>
+        <a href="#grant">Walk-in grant</a>
+        <a href="<?php echo e(url("admin/messages.php")); ?>">Inbox<?php echo $pending_messages > 0 ? " · " . $pending_messages : ""; ?></a>
+    </nav>
+
     <div class="admin-stats">
-        <div class="admin-stat-card">
+        <a class="admin-stat-card" href="#accounts">
             <h3>REGISTERED MEMBERS</h3>
             <h2><?php echo $total_users; ?></h2>
             <p><?php echo $new_this_month; ?> new this month</p>
-        </div>
-        <div class="admin-stat-card">
+            <span class="admin-stat-hint">View accounts</span>
+        </a>
+        <a class="admin-stat-card" href="<?php echo e(url("admin/?status=active&stay=memberships")); ?>">
             <h3>ACTIVE PLANS</h3>
             <h2><?php echo $active_memberships; ?></h2>
             <p><?php echo $expired_memberships; ?> expired</p>
-        </div>
-        <div class="admin-stat-card">
+            <span class="admin-stat-hint">Show active</span>
+        </a>
+        <a class="admin-stat-card" href="#memberships">
             <h3>REVENUE</h3>
             <h2>₱<?php echo number_format($total_revenue, 0); ?></h2>
             <p><?php echo $total_memberships; ?> membership records</p>
-        </div>
-        <div class="admin-stat-card">
+            <span class="admin-stat-hint">View records</span>
+        </a>
+        <a class="admin-stat-card<?php echo ($pending_messages + $expiring_soon + $pending_cash_count) > 0 ? " is-alert" : ""; ?>" href="<?php echo $pending_cash_count > 0 ? e(url("admin/?status=pending&stay=memberships")) : e(url("admin/messages.php")); ?>">
             <h3>NEEDS ATTENTION</h3>
             <h2><?php echo $pending_messages + $expiring_soon + $pending_cash_count; ?></h2>
             <p><?php echo $pending_messages; ?> unread · <?php echo $pending_cash_count; ?> cash · <?php echo $expiring_soon; ?> expiring in 7 days</p>
-        </div>
+            <span class="admin-stat-hint"><?php echo $pending_cash_count > 0 ? "Review cash" : "Open inbox"; ?></span>
+        </a>
     </div>
 
     <div class="admin-split">
@@ -364,7 +382,7 @@ require __DIR__ . "/../shared/admin_header.php";
                                 <strong><?php echo e($item["name"]); ?></strong>
                                 <span><?php echo e($item["inquiry_type"]); ?></span>
                             </div>
-                            <small><?php echo date("M d", strtotime($item["created_at"])); ?></small>
+                            <a href="<?php echo e(url("admin/messages.php")); ?>" class="admin-mini-btn">Reply</a>
                         </li>
                     <?php endwhile; ?>
                 </ul>
@@ -381,7 +399,7 @@ require __DIR__ . "/../shared/admin_header.php";
                                 <strong><?php echo e($item["name"]); ?></strong>
                                 <span><?php echo e($item["plan"]); ?> · ₱<?php echo number_format((float) $item["price"], 0); ?></span>
                             </div>
-                            <a href="<?php echo e(url("admin/?status=pending&stay=memberships")); ?>" class="gold-text">Review</a>
+                            <a href="<?php echo e(url("admin/?status=pending&stay=memberships")); ?>" class="admin-mini-btn">Review</a>
                         </li>
                     <?php endforeach; ?>
                 </ul>
@@ -404,18 +422,22 @@ require __DIR__ . "/../shared/admin_header.php";
         </section>
     </div>
 
-    <form id="records" class="admin-toolbar" method="GET" action="<?php echo e(url("admin/")); ?>#records">
-        <input type="search" name="q" value="<?php echo e($search); ?>" placeholder="Search name or email" maxlength="80">
-        <select name="status">
-            <option value="all" <?php echo $status_filter === "all" ? "selected" : ""; ?>>All memberships</option>
-            <option value="active" <?php echo $status_filter === "active" ? "selected" : ""; ?>>Active only</option>
-            <option value="expired" <?php echo $status_filter === "expired" ? "selected" : ""; ?>>Expired only</option>
-            <option value="pending" <?php echo $status_filter === "pending" ? "selected" : ""; ?>>Pending cash</option>
-        </select>
-        <button type="submit">FILTER</button>
-        <?php if ($search !== "" || $status_filter !== "all"): ?>
-            <a href="<?php echo e(url("admin/#records")); ?>" class="admin-clear">Clear</a>
-        <?php endif; ?>
+    <form id="records" class="admin-toolbar" method="GET" action="<?php echo e(url("admin/")); ?>" role="search">
+        <input type="hidden" name="stay" value="records">
+        <p class="admin-toolbar-kicker">Search accounts and membership records</p>
+        <div class="admin-toolbar-row">
+            <input type="search" name="q" value="<?php echo e($search); ?>" placeholder="Search name or email" maxlength="80" aria-label="Search name or email">
+            <select name="status" aria-label="Filter membership status">
+                <option value="all" <?php echo $status_filter === "all" ? "selected" : ""; ?>>All memberships</option>
+                <option value="active" <?php echo $status_filter === "active" ? "selected" : ""; ?>>Active only</option>
+                <option value="expired" <?php echo $status_filter === "expired" ? "selected" : ""; ?>>Expired only</option>
+                <option value="pending" <?php echo $status_filter === "pending" ? "selected" : ""; ?>>Pending cash</option>
+            </select>
+            <button type="submit">FILTER</button>
+            <?php if ($search !== "" || $status_filter !== "all"): ?>
+                <a href="<?php echo e(url("admin/?stay=records")); ?>" class="admin-clear">Clear</a>
+            <?php endif; ?>
+        </div>
     </form>
 
     <div id="accounts" class="admin-table-box">
@@ -631,10 +653,14 @@ require __DIR__ . "/../shared/admin_header.php";
             GCash or card starts the 30-day plan right away.
         </p>
         <?php if ($grant_members === []): ?>
-            <p class="admin-empty-note">No registered members to grant a plan to.</p>
+            <div class="admin-empty-card">
+                <strong>No members to grant yet</strong>
+                <p>When someone creates an account on the site, they will show up here so you can grant a walk-in or GCash plan.</p>
+            </div>
         <?php else: ?>
             <form method="POST" class="admin-grant-form">
                 <?php echo csrf_field(); ?>
+                <input type="hidden" name="grant_membership" value="1">
                 <label>
                     Member
                     <select name="grant_user_id" id="grant_user_id" required>
@@ -668,23 +694,12 @@ require __DIR__ . "/../shared/admin_header.php";
                         <?php endforeach; ?>
                     </select>
                 </label>
-                <button type="submit" name="grant_membership" value="1">GRANT MEMBERSHIP</button>
+                <button type="submit">GRANT MEMBERSHIP</button>
             </form>
         <?php endif; ?>
     </section>
 </div>
 
-<div class="admin-modal" id="admin-confirm-modal" hidden>
-    <div class="admin-modal-backdrop" data-modal-close="1"></div>
-    <div class="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="admin-confirm-title">
-        <h2 id="admin-confirm-title">CONFIRM</h2>
-        <p id="admin-confirm-text"></p>
-        <div class="admin-modal-actions">
-            <button type="button" class="admin-modal-cancel" data-modal-close="1">CANCEL</button>
-            <button type="button" class="admin-modal-ok" id="admin-confirm-ok">CONFIRM</button>
-        </div>
-    </div>
-</div>
 <?php if ($stay !== ""): ?>
 <script>
 (function () {
